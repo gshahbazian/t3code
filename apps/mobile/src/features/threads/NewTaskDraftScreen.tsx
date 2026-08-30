@@ -31,6 +31,7 @@ import {
 } from "../../components/ComposerToolbar";
 import { AndroidScreenHeader } from "../../components/AndroidScreenHeader";
 import { ComposerAttachmentStrip } from "../../components/ComposerAttachmentStrip";
+import { VideoPreviewModal } from "../../components/VideoPreviewModal";
 import { ProviderIcon } from "../../components/ProviderIcon";
 import { SymbolView } from "../../components/AppSymbol";
 import { AppText as Text } from "../../components/AppText";
@@ -47,6 +48,7 @@ import {
   convertPastedImagesToAttachments,
   pickComposerFiles,
   pickComposerImages,
+  type DraftComposerFileAttachment,
 } from "../../lib/composerImages";
 import { useScaledTextRole } from "../settings/appearance/useScaledTextRole";
 import {
@@ -151,6 +153,23 @@ export function NewTaskDraftScreen(props: {
   const promptInputRef = useRef<ComposerEditorHandle>(null);
   const loadedBranchesProjectKeyRef = useRef<string | null>(null);
   const [isComposerFocused, setIsComposerFocused] = useState(false);
+  const [previewVideo, setPreviewVideo] = useState<DraftComposerFileAttachment | null>(null);
+  const wasFocusedBeforeVideoRef = useRef(false);
+  const openVideoPreview = useCallback(
+    (attachment: DraftComposerFileAttachment) => {
+      wasFocusedBeforeVideoRef.current = isComposerFocused;
+      setPreviewVideo(attachment);
+    },
+    [isComposerFocused],
+  );
+  const closeVideoPreview = useCallback(() => {
+    setPreviewVideo(null);
+    if (wasFocusedBeforeVideoRef.current) {
+      setTimeout(() => {
+        if (navigation.isFocused()) promptInputRef.current?.focus();
+      }, 100);
+    }
+  }, [navigation]);
   const settingsSheetPresentation = useThreadSettingsSheetPresentation({
     editorRef: promptInputRef,
     isEditorFocused: isComposerFocused,
@@ -1120,6 +1139,7 @@ export function NewTaskDraftScreen(props: {
               imageBorderRadius={16}
               imageSize={72}
               onRemove={isComposerInteractionLocked ? () => undefined : flow.removeAttachment}
+              onPressVideo={openVideoPreview}
             />
           </View>
         ) : null}
@@ -1187,6 +1207,10 @@ export function NewTaskDraftScreen(props: {
           />
         </ComposerToolbarRow>
       </ComposerSurface>
+      <VideoPreviewModal
+        source={previewVideo ? { type: "local", attachment: previewVideo } : null}
+        onRequestClose={closeVideoPreview}
+      />
     </View>
   );
 
